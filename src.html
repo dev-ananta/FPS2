@@ -1124,7 +1124,7 @@
               seconds--;
               if (seconds <= 4) {
                 if (seconds < 0) {
-                  renderer.domElement.onclick = () => { renderer.domElement.requestPointerLock = (renderer.domElement.requestPointerLock || renderer.domElement.mozRequestPointerLock); renderer.domElement.requestPointerLock() };
+                  renderer.domElement.onclick = requestCanvasPointerLock;
                   let weaponIndex = gunIndexes[loadout[0]];
                   mixers[weaponIndex].clipAction(animations[weaponIndex][0]).loop = THREE.LoopOnce;
                   mixers[weaponIndex].clipAction(animations[weaponIndex][0]).play();
@@ -1258,9 +1258,17 @@
       const scene = new THREE.Scene();
       window.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, .2, 1000);
       const renderer = new THREE.WebGLRenderer({ antialias: true });
-      renderer.setSize(window.innerWidth, window.innerHeight);
       document.body.appendChild(renderer.domElement);
-      renderer.setPixelRatio(renderer.setPixelRatio(1+(devicePixelRatio/4)));
+      const getDisplayPixelRatio = () => Math.min(window.devicePixelRatio || 1, 2);
+      const applyRendererSize = () => {
+        renderer.setPixelRatio(getDisplayPixelRatio());
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      };
+      const requestCanvasPointerLock = () => {
+        const request = renderer.domElement.requestPointerLock || renderer.domElement.mozRequestPointerLock || renderer.domElement.webkitRequestPointerLock;
+        request && request.call(renderer.domElement);
+      };
+      applyRendererSize();
       /* End renderer setup */
       muzzleFlash = new THREE.Mesh();
       bulletShell = new THREE.Mesh();
@@ -2957,7 +2965,7 @@
         }
         gametime.run("rotate", [gametime.user.position+","+camera.position.x+","+camera.position.y+","+camera.position.z+","+camera.rotation.x+","+camera.rotation.y+","+camera.rotation.z]);
       });
-      window.addEventListener("resize", function() { camera.aspect = window.innerWidth / window.innerHeight, camera.updateProjectionMatrix(), renderer.setSize(window.innerWidth, window.innerHeight) }, true);
+      window.addEventListener("resize", function() { camera.aspect = window.innerWidth / window.innerHeight, camera.updateProjectionMatrix(), applyRendererSize() }, true);
       if (new URLSearchParams(location.search).get("code")) {
         let e = document.createElement("div");
         e.style = "z-index:9999999;position:absolute;top:80vh;font-family:Arial,Helvetica,sans-serif!important;left:50%;margin-left:-250px;width:500px;font-size:40px;text-align:center;color:#fff;text-shadow:2px 2px #38b6ff";
@@ -3019,7 +3027,7 @@
           menu.appendChild(document.createElement("br"));
         });
       }
-      settingsmenu = new PauseMenu({ title: "Settings", buttons: { Performance: function() {  isPaused ? settingsmenu.close(false) : settingsmenu.close(); let range = document.createElement("div"); range.innerHTML = "<h2>Change performance settings</h2><input type='range' onchange='currentPerformance=this.value;this.value<=80?renderer.setPixelRatio(1):renderer.setPixelRatio(1+(devicePixelRatio/4));this.value<=50?renderer.setPixelRatio(.75):renderer.setPixelRatio(1);this.value<=40?(renderer.shadowMap.enabled=false):(renderer.shadowMap.enabled=true)'>"; swal({ content: range }).then(() => settingsmenu.open()) }, Sensitivity: function() { isPaused ? settingsmenu.close(false) : settingsmenu.close(); let range = document.createElement("div"); range.innerHTML = "<h2>Change mouse sensitivity</h2><input type='range' onchange='controls.pointerSpeed=this.value/50'><h2>Change gamepad sensitivity</h2><input type='range' onchange='gamepadControls.speed=this.value/17'><h2>Change touch sensitivity</h2><input type='range'>"; swal({ content: range }).then(() => settingsmenu.open()) }, "Go back": function() { isPaused ? settingsmenu.close(true) : settingsmenu.close(false) }}});
+      settingsmenu = new PauseMenu({ title: "Settings", buttons: { Performance: function() {  isPaused ? settingsmenu.close(false) : settingsmenu.close(); let range = document.createElement("div"); range.innerHTML = "<h2>Change performance settings</h2><input type='range' onchange='currentPerformance=this.value;let ratio=getDisplayPixelRatio();if(this.value<=50){ratio=Math.max(.75,ratio*.75)}renderer.setPixelRatio(ratio);renderer.setSize(window.innerWidth,window.innerHeight);this.value<=40?(renderer.shadowMap.enabled=false):(renderer.shadowMap.enabled=true)'>"; swal({ content: range }).then(() => settingsmenu.open()) }, Sensitivity: function() { isPaused ? settingsmenu.close(false) : settingsmenu.close(); let range = document.createElement("div"); range.innerHTML = "<h2>Change mouse sensitivity</h2><input type='range' onchange='controls.pointerSpeed=this.value/50'><h2>Change gamepad sensitivity</h2><input type='range' onchange='gamepadControls.speed=this.value/17'><h2>Change touch sensitivity</h2><input type='range'>"; swal({ content: range }).then(() => settingsmenu.open()) }, "Go back": function() { isPaused ? settingsmenu.close(true) : settingsmenu.close(false) }}});
       function settings() {
         settingsmenu.open();
       }
